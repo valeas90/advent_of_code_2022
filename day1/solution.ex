@@ -1,18 +1,6 @@
 defmodule Solution do
   @file_path "./input.txt"
 
-  def chunk_fun(line, acc) do
-    if line == "\n" do
-      {:cont, [Enum.sum(acc)], []}
-    else
-      {:cont, [clean_line(line) | acc]}
-    end
-  end
-
-  def after_fun(acc) do
-    {:cont, acc}
-  end
-
   def part_one() do
     @file_path
     |> File.stream!()
@@ -35,9 +23,21 @@ defmodule Solution do
     |> Enum.sum()
   end
 
-  def clean_line(line) do
+  defp clean_line(line) do
     {number, ""} = line |> String.replace("\n", "") |> Integer.parse()
     number
+  end
+
+  defp chunk_fun(line, acc) do
+    if line == "\n" do
+      {:cont, [Enum.sum(acc)], []}
+    else
+      {:cont, [clean_line(line) | acc]}
+    end
+  end
+
+  defp after_fun(acc) do
+    {:cont, acc}
   end
 end
 
