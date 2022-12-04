@@ -8,6 +8,7 @@ defmodule Solution do
       after_fun(acc)
     end)
     |> Enum.max()
+    |> Enum.at(0)
   end
 
   def part_two() do
@@ -24,8 +25,7 @@ defmodule Solution do
   end
 
   defp clean_line(line) do
-    {number, ""} = line |> String.replace("\n", "") |> Integer.parse()
-    number
+    line |> String.replace("\n", "") |> Integer.parse() |> elem(0)
   end
 
   defp chunk_fun(line, acc) do
