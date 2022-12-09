@@ -1,7 +1,7 @@
 defmodule Solution do
   @file_path "./input.txt"
   @starting_point %{head: {0, 0}, tail: {0, 0}}
-  @regex ~r/^(?<direction>[LRUD]) (?<steps>[1-9]+)/
+  @regex ~r/^(?<direction>[LRUD]) (?<steps>[0-9]+)/
 
   def part_one() do
     @file_path
@@ -34,52 +34,50 @@ defmodule Solution do
     move_rope(direction, steps - 1, coordinates, tail_places)
   end
 
-  defp move_axis({x_axis, y_axis}, direction) do
+  defp move_axis({x, y}, direction) do
     case direction do
-      :up -> {x_axis + 1, y_axis}
-      :down -> {x_axis - 1, y_axis}
-      :right -> {x_axis, y_axis + 1}
-      :left -> {x_axis, y_axis - 1}
+      :up -> {x, y + 1}
+      :down -> {x, y - 1}
+      :right -> {x + 1, y}
+      :left -> {x - 1, y}
     end
   end
 
-  defp adjacent?({head_x_axis, head_y_axis}, {tail_x_axis, tail_y_axis}) do
-    {distance_x_axis, distance_y_axis} = {head_x_axis - tail_x_axis, head_y_axis - tail_y_axis}
-    distance_x_axis in [-1, 0, 1] and distance_y_axis in [-1, 0, 1]
+  defp adjacent?({head_x, head_y}, {tail_x, tail_y}) do
+    {distance_x, distance_y} = {head_x - tail_x, head_y - tail_y}
+    distance_x in [-1, 0, 1] and distance_y in [-1, 0, 1]
   end
 
   defp move_tail(
-         %{head: {head_x_axis, head_y_axis}, tail: {tail_x_axis, tail_y_axis}} = coordinates,
+         %{head: {head_x, head_y}, tail: {tail_x, tail_y}} = coordinates,
          tail_places
        ) do
     new_tail_axis =
       cond do
-        head_x_axis == tail_x_axis ->
-          if head_y_axis > tail_y_axis do
-            {head_x_axis, head_y_axis - 1}
+        head_x == tail_x ->
+          if head_y > tail_y do
+            {head_x, head_y - 1}
           else
-            {head_x_axis, head_y_axis + 1}
+            {head_x, head_y + 1}
           end
 
-        head_y_axis == tail_y_axis ->
-          if head_x_axis > tail_x_axis do
-            {head_x_axis - 1, head_y_axis}
+        head_y == tail_y ->
+          if head_x > tail_x do
+            {head_x - 1, head_y}
           else
-            {head_x_axis + 1, head_y_axis}
+            {head_x + 1, head_y}
           end
 
         true ->
           cond do
-            head_x_axis - tail_x_axis == 2 -> {head_x_axis - 1, head_y_axis}
-            head_x_axis - tail_x_axis == -2 -> {head_x_axis + 1, head_y_axis}
-            head_y_axis - tail_y_axis == 2 -> {head_x_axis, head_y_axis - 1}
-            head_y_axis - tail_y_axis == -2 -> {head_x_axis, head_y_axis + 1}
+            head_x - tail_x == 2 -> {head_x - 1, head_y}
+            head_x - tail_x == -2 -> {head_x + 1, head_y}
+            head_y - tail_y == 2 -> {head_x, head_y - 1}
+            head_y - tail_y == -2 -> {head_x, head_y + 1}
           end
       end
 
-    IO.inspect(
-      "moving tail from #{inspect({tail_x_axis, tail_y_axis})} to #{inspect(new_tail_axis)}"
-    )
+    # IO.inspect("moving tail from #{inspect({tail_x, tail_y})} to #{inspect(new_tail_axis)}")
 
     {Map.update!(coordinates, :tail, fn _x -> new_tail_axis end),
      MapSet.put(tail_places, new_tail_axis)}
@@ -97,6 +95,7 @@ defmodule Solution do
     instructions =
       @regex
       |> Regex.named_captures(line)
+      |> IO.inspect()
       |> Map.update!("steps", &String.to_integer(&1))
       |> Map.update!("direction", fn letter ->
         case letter do
@@ -113,3 +112,4 @@ end
 
 Solution.part_one() |> IO.inspect(label: "tail visited this many positions")
 # 6004 too low
+# 6030 is right
