@@ -13,12 +13,12 @@ defmodule Solution do
     Enum.reduce(stream, initial_state(knots), &parse_line/2)
   end
 
-  defp initial_state(_knots_amount) do
+  defp initial_state(knots_amount) do
     %{
       tail_places: MapSet.new([{0, 0}]),
       coordinates: %{
         head: {0, 0},
-        tail: {0, 0}
+        knots: Enum.map(2..knots_amount, fn _ -> {0, 0} end)
       }
     }
   end
@@ -32,11 +32,18 @@ defmodule Solution do
 
   defp move_rope(direction, steps, %{coordinates: coordinates} = state) do
     head = move_head(coordinates.head, direction)
-    tail = maybe_update_tail(head, coordinates.tail)
+
+    {knots, _acc} =
+      Enum.map_reduce(coordinates.knots, head, fn follower, followed ->
+        position = maybe_move_knot(followed, follower)
+        {position, position}
+      end)
+
+    tail = Enum.at(knots, -1)
 
     new_state = %{
       tail_places: MapSet.put(state.tail_places, tail),
-      coordinates: %{head: head, tail: tail}
+      coordinates: %{head: head, knots: knots}
     }
 
     move_rope(direction, steps - 1, new_state)
@@ -82,7 +89,7 @@ defmodule Solution do
     end
   end
 
-  defp maybe_update_tail(head, tail) do
+  defp maybe_move_knot(head, tail) do
     if adjacent?(head, tail), do: tail, else: move_tail(head, tail)
   end
 
@@ -106,6 +113,6 @@ defmodule Solution do
   defp count_tail_places(%{tail_places: tail_places}), do: MapSet.size(tail_places)
 end
 
-Solution.part_one(2) |> IO.inspect(label: "tail visited this many positions")
-# 6004 too low
-# 6030 is right
+Solution.part_one(2) |> IO.inspect(label: "tail visited this many positions when knots is 2")
+
+# Solution.part_one(10) |> IO.inspect(label: "tail visited this many positions when knots is 10")
