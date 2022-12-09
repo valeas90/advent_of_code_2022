@@ -59,38 +59,34 @@ defmodule Solution do
   end
 
   defp adjacent?({head_x, head_y}, {tail_x, tail_y}) do
-    {distance_x, distance_y} = {head_x - tail_x, head_y - tail_y}
-    distance_x in [-1, 0, 1] and distance_y in [-1, 0, 1]
+    (head_x - tail_x) in [-1, 0, 1] and (head_y - tail_y) in [-1, 0, 1]
   end
 
-  defp move_tail({head_x, head_y}, {tail_x, tail_y}) do
-    cond do
-      head_x == tail_x ->
-        if head_y > tail_y do
-          {head_x, head_y - 1}
-        else
-          {head_x, head_y + 1}
-        end
+  defp move_knot({head_x, head_y}, {tail_x, tail_y}) do
+    x_diff = head_x - tail_x
+    y_diff = head_y - tail_y
 
-      head_y == tail_y ->
-        if head_x > tail_x do
-          {head_x - 1, head_y}
-        else
-          {head_x + 1, head_y}
-        end
+    cond do
+      abs(x_diff) > 1 and abs(y_diff) > 1 ->
+        move_x = if x_diff > 0, do: 1, else: -1
+        move_y = if y_diff > 0, do: 1, else: -1
+        {tail_x + move_x, tail_y + move_y}
+
+      abs(y_diff) > 1 ->
+        move_y = if y_diff > 0, do: 1, else: -1
+        {head_x, tail_y + move_y}
+
+      abs(x_diff) > 1 ->
+        move_x = if x_diff > 0, do: 1, else: -1
+        {tail_x + move_x, head_y}
 
       true ->
-        cond do
-          head_x - tail_x == 2 -> {head_x - 1, head_y}
-          head_x - tail_x == -2 -> {head_x + 1, head_y}
-          head_y - tail_y == 2 -> {head_x, head_y - 1}
-          head_y - tail_y == -2 -> {head_x, head_y + 1}
-        end
+        {tail_x, tail_y}
     end
   end
 
   defp maybe_move_knot(head, tail) do
-    if adjacent?(head, tail), do: tail, else: move_tail(head, tail)
+    if adjacent?(head, tail), do: tail, else: move_knot(head, tail)
   end
 
   defp extract_instructions(line) do
@@ -115,4 +111,4 @@ end
 
 Solution.part_one(2) |> IO.inspect(label: "tail visited this many positions when knots is 2")
 
-# Solution.part_one(10) |> IO.inspect(label: "tail visited this many positions when knots is 10")
+Solution.part_one(10) |> IO.inspect(label: "tail visited this many positions when knots is 10")
