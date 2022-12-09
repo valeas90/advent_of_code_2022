@@ -23,8 +23,6 @@ defmodule Solution do
     }
   end
 
-  defp count_tail_places(%{tail_places: tail_places}), do: MapSet.size(tail_places)
-
   defp parse_line(line, state) do
     {direction, steps} = extract_instructions(line)
     move_rope(direction, steps, state)
@@ -33,19 +31,18 @@ defmodule Solution do
   defp move_rope(_direction, 0, state), do: state
 
   defp move_rope(direction, steps, %{coordinates: coordinates} = state) do
-    new_head_position = move_axis(coordinates.head, direction)
+    head = move_head(coordinates.head, direction)
+    tail = maybe_update_tail(head, coordinates.tail)
 
-    coordinates = Map.update!(coordinates, :head, fn _x -> new_head_position end)
-    new_state = update_coordinates(state, coordinates)
-    new_state = maybe_update_tail(new_state)
+    new_state = %{
+      tail_places: MapSet.put(state.tail_places, tail),
+      coordinates: %{head: head, tail: tail}
+    }
+
     move_rope(direction, steps - 1, new_state)
   end
 
-  defp update_coordinates(state, new_coordinates) do
-    Map.update!(state, :coordinates, fn _ -> new_coordinates end)
-  end
-
-  defp move_axis({x, y}, direction) do
+  defp move_head({x, y}, direction) do
     case direction do
       :up -> {x, y + 1}
       :down -> {x, y - 1}
@@ -59,46 +56,34 @@ defmodule Solution do
     distance_x in [-1, 0, 1] and distance_y in [-1, 0, 1]
   end
 
-  defp move_tail(%{coordinates: %{head: {head_x, head_y}, tail: {tail_x, tail_y}} = coordinates,
-         tail_places: tail_places}
-       ) do
-    new_tail_axis =
-      cond do
-        head_x == tail_x ->
-          if head_y > tail_y do
-            {head_x, head_y - 1}
-          else
-            {head_x, head_y + 1}
-          end
+  defp move_tail({head_x, head_y}, {tail_x, tail_y}) do
+    cond do
+      head_x == tail_x ->
+        if head_y > tail_y do
+          {head_x, head_y - 1}
+        else
+          {head_x, head_y + 1}
+        end
 
-        head_y == tail_y ->
-          if head_x > tail_x do
-            {head_x - 1, head_y}
-          else
-            {head_x + 1, head_y}
-          end
+      head_y == tail_y ->
+        if head_x > tail_x do
+          {head_x - 1, head_y}
+        else
+          {head_x + 1, head_y}
+        end
 
-        true ->
-          cond do
-            head_x - tail_x == 2 -> {head_x - 1, head_y}
-            head_x - tail_x == -2 -> {head_x + 1, head_y}
-            head_y - tail_y == 2 -> {head_x, head_y - 1}
-            head_y - tail_y == -2 -> {head_x, head_y + 1}
-          end
-      end
-
-    %{
-      coordinates: Map.update!(coordinates, :tail, fn _x -> new_tail_axis end),
-      tail_places: MapSet.put(tail_places, new_tail_axis)
-    }
+      true ->
+        cond do
+          head_x - tail_x == 2 -> {head_x - 1, head_y}
+          head_x - tail_x == -2 -> {head_x + 1, head_y}
+          head_y - tail_y == 2 -> {head_x, head_y - 1}
+          head_y - tail_y == -2 -> {head_x, head_y + 1}
+        end
+    end
   end
 
-  defp maybe_update_tail(%{coordinates: coordinates} = state) do
-    if adjacent?(coordinates.head, coordinates.tail) do
-      state
-    else
-      move_tail(state)
-    end
+  defp maybe_update_tail(head, tail) do
+    if adjacent?(head, tail), do: tail, else: move_tail(head, tail)
   end
 
   defp extract_instructions(line) do
@@ -117,6 +102,8 @@ defmodule Solution do
 
     {instructions["direction"], instructions["steps"]}
   end
+
+  defp count_tail_places(%{tail_places: tail_places}), do: MapSet.size(tail_places)
 end
 
 Solution.part_one(2) |> IO.inspect(label: "tail visited this many positions")
