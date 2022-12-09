@@ -1,37 +1,48 @@
 defmodule Solution do
   @file_path "./input.txt"
-  @starting_point %{head: {0, 0}, tail: {0, 0}}
   @regex ~r/^(?<direction>[LRUD]) (?<steps>[0-9]+)/
 
-  def part_one() do
+  def part_one(knots) do
     @file_path
     |> File.stream!()
-    |> make_moves()
+    |> make_moves(knots)
     |> count_tail_places()
   end
 
-  defp make_moves(stream) do
-    stream
-    |> Enum.reduce({@starting_point, MapSet.new([{0, 0}])}, fn line, {coordinates, tail_places} ->
-      parse_line(line, tail_places, coordinates)
-    end)
+  defp make_moves(stream, knots) do
+    Enum.reduce(stream, initial_state(knots), &parse_line/2)
   end
 
-  defp count_tail_places({_coordinates, tail_places}), do: MapSet.size(tail_places)
+  defp initial_state(_knots_amount) do
+    %{
+      tail_places: MapSet.new([{0, 0}]),
+      coordinates: %{
+        head: {0, 0},
+        tail: {0, 0}
+      }
+    }
+  end
 
-  defp parse_line(line, tail_places, coordinates) do
+  defp count_tail_places(%{tail_places: tail_places}), do: MapSet.size(tail_places)
+
+  defp parse_line(line, state) do
     {direction, steps} = extract_instructions(line)
-    IO.inspect("coordinates are #{inspect(coordinates)}. About to move #{steps} to #{direction}")
-    move_rope(direction, steps, coordinates, tail_places)
+    move_rope(direction, steps, state)
   end
 
-  defp move_rope(_direction, 0, coordinates, tail_places), do: {coordinates, tail_places}
+  defp move_rope(_direction, 0, state), do: state
 
-  defp move_rope(direction, steps, coordinates, tail_places) do
+  defp move_rope(direction, steps, %{coordinates: coordinates} = state) do
     new_head_position = move_axis(coordinates.head, direction)
+
     coordinates = Map.update!(coordinates, :head, fn _x -> new_head_position end)
-    {coordinates, tail_places} = maybe_update_tail(coordinates, tail_places)
-    move_rope(direction, steps - 1, coordinates, tail_places)
+    new_state = update_coordinates(state, coordinates)
+    new_state = maybe_update_tail(new_state)
+    move_rope(direction, steps - 1, new_state)
+  end
+
+  defp update_coordinates(state, new_coordinates) do
+    Map.update!(state, :coordinates, fn _ -> new_coordinates end)
   end
 
   defp move_axis({x, y}, direction) do
@@ -48,9 +59,8 @@ defmodule Solution do
     distance_x in [-1, 0, 1] and distance_y in [-1, 0, 1]
   end
 
-  defp move_tail(
-         %{head: {head_x, head_y}, tail: {tail_x, tail_y}} = coordinates,
-         tail_places
+  defp move_tail(%{coordinates: %{head: {head_x, head_y}, tail: {tail_x, tail_y}} = coordinates,
+         tail_places: tail_places}
        ) do
     new_tail_axis =
       cond do
@@ -77,17 +87,17 @@ defmodule Solution do
           end
       end
 
-    # IO.inspect("moving tail from #{inspect({tail_x, tail_y})} to #{inspect(new_tail_axis)}")
-
-    {Map.update!(coordinates, :tail, fn _x -> new_tail_axis end),
-     MapSet.put(tail_places, new_tail_axis)}
+    %{
+      coordinates: Map.update!(coordinates, :tail, fn _x -> new_tail_axis end),
+      tail_places: MapSet.put(tail_places, new_tail_axis)
+    }
   end
 
-  defp maybe_update_tail(coordinates, tail_places) do
+  defp maybe_update_tail(%{coordinates: coordinates} = state) do
     if adjacent?(coordinates.head, coordinates.tail) do
-      {coordinates, tail_places}
+      state
     else
-      move_tail(coordinates, tail_places)
+      move_tail(state)
     end
   end
 
@@ -95,7 +105,6 @@ defmodule Solution do
     instructions =
       @regex
       |> Regex.named_captures(line)
-      |> IO.inspect()
       |> Map.update!("steps", &String.to_integer(&1))
       |> Map.update!("direction", fn letter ->
         case letter do
@@ -110,6 +119,6 @@ defmodule Solution do
   end
 end
 
-Solution.part_one() |> IO.inspect(label: "tail visited this many positions")
+Solution.part_one(2) |> IO.inspect(label: "tail visited this many positions")
 # 6004 too low
 # 6030 is right
